@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>JSON ⇄ YAML – Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js" defer></script>
+  <style>
+    :root{--bg1:#071a2c;--bg2:#0b2e4e;--fg:#eaf3ff;--sub:#b9cceb;--line:rgba(255,255,255,.12);--acc:#00c1ff;--acc2:#2ae0ff;--btnText:#052238}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
+      background:radial-gradient(1200px 500px at 80% -120%, rgba(0,193,255,.20), transparent 60%),linear-gradient(135deg,var(--bg1),var(--bg2));padding:32px 16px}
+    .ot{max-width:1100px;margin:0 auto;padding:20px;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);background:rgba(255,255,255,.03)}
+    .ot h1{margin:0 0 6px;font-size:clamp(26px,4.2vw,36px)} .ot .sub{margin:0 0 16px;color:var(--sub)}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    label{font-weight:600;margin-bottom:6px;display:block}
+    textarea{min-height:260px;resize:vertical;font-family:ui-monospace,Menlo,Monaco,Consolas,"Courier New",monospace;font-size:14px;line-height:1.5;padding:12px;border:1px solid #214462;border-radius:10px;color:#dff2ff;background:#0a2035;width:100%}
+    textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(0,193,255,.22)}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+    .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid #123552;background:rgba(255,255,255,.06);color:#eaf3ff;font-weight:600}
+    .btn:hover{transform:translateY(-1px)} .ghost{border-color:#214462;color:#b9cceb}
+    .btn.pri{background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--btnText);border-color:transparent;box-shadow:0 8px 20px rgba(0,193,255,.25)}
+    .btn.pri:hover{box-shadow:0 12px 26px rgba(0,193,255,.32)}
+    .tip{color:var(--sub);margin-top:10px} .status{margin-top:8px;min-height:20px;color:#13e0ff;font-weight:700}.status.error{color:#ff7f7f}
+  </style>
+</head>
+<body>
+  <section class="ot" id="json2yaml" data-tool="json2yaml" aria-label="JSON to YAML and back">
+    <h1>JSON ⇄ YAML</h1>
+    <p class="sub">Everything happens locally in your browser. No uploads.</p>
+
+    <div class="grid">
+      <div>
+        <label for="ot-json">JSON</label>
+        <textarea id="ot-json" spellcheck="false" placeholder='{"hello":"world"}'></textarea>
+        <div class="actions">
+          <button class="btn pri" data-action="json2yaml">JSON → YAML</button>
+          <button class="btn" data-action="pretty">Prettify</button>
+          <button class="btn" data-action="minify">Minify</button>
+          <button class="btn" data-action="copy-json">Copy</button>
+          <button class="btn ghost" data-action="clear-json">Clear</button>
+        </div>
+      </div>
+
+      <div>
+        <label for="ot-yaml">YAML</label>
+        <textarea id="ot-yaml" spellcheck="false" placeholder="hello: world"></textarea>
+        <div class="actions">
+          <button class="btn pri" data-action="yaml2json">YAML → JSON</button>
+          <button class="btn" data-action="copy-yaml">Copy</button>
+          <button class="btn ghost" data-action="clear-yaml">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="tip">Tip: paste JSON on the left; or paste YAML on the right to convert back.</p>
+    <div class="status" aria-live="polite" role="status"></div>
+  </section>
+
+  <script>
+  (function(){
+    function ready(fn){document.readyState!=='loading'?fn():document.addEventListener('DOMContentLoaded',fn)}
+    ready(function(){
+      var root=document.getElementById('json2yaml'); if(!root) return;
+      var elJSON=root.querySelector('#ot-json'), elYAML=root.querySelector('#ot-yaml'), status=root.querySelector('.status');
+
+      function setStatus(msg,err){status.textContent=msg||'';status.classList.toggle('error',!!err)}
+      function copy(txt){ if(!txt) return setStatus('Nothing to copy',true);
+        navigator.clipboard?.writeText(txt).then(()=>setStatus('Copied')).catch(()=>setStatus('Copy failed',true)); }
+
+      root.addEventListener('click',function(e){
+        var btn=e.target.closest('button[data-action]'); if(!btn) return; var a=btn.getAttribute('data-action'); setStatus('');
+        try{
+          if(a==='json2yaml'){ if(!elJSON.value.trim()) return setStatus('Paste JSON first',true);
+            var obj=JSON.parse(elJSON.value); elYAML.value=jsyaml.dump(obj,{noRefs:true,indent:2,lineWidth:100}); setStatus('Converted JSON → YAML'); }
+          if(a==='yaml2json'){ if(!elYAML.value.trim()) return setStatus('Paste YAML first',true);
+            var obj2=jsyaml.load(elYAML.value); elJSON.value=JSON.stringify(obj2,null,2); setStatus('Converted YAML → JSON'); }
+          if(a==='pretty'){ if(!elJSON.value.trim()) return setStatus('Nothing to prettify',true);
+            elJSON.value=JSON.stringify(JSON.parse(elJSON.value),null,2); setStatus('JSON prettified'); }
+          if(a==='minify'){ if(!elJSON.value.trim()) return setStatus('Nothing to minify',true);
+            elJSON.value=JSON.stringify(JSON.parse(elJSON.value)); setStatus('JSON minified'); }
+          if(a==='copy-json') copy(elJSON.value);
+          if(a==='copy-yaml') copy(elYAML.value);
+          if(a==='clear-json'){ elJSON.value=''; setStatus('Cleared JSON'); }
+          if(a==='clear-yaml'){ elYAML.value=''; setStatus('Cleared YAML'); }
+        }catch(err){ console.error(err); setStatus('Error: '+(err.message||'check your input'),true); }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
