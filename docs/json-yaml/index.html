@@ -2,29 +2,129 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>JSON ⇄ YAML – Demo</title>
+  <title>JSON ⇄ YAML – OfflineTools (Demo)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Convert JSON to YAML and back. Client-side, privacy-first.">
+  <link rel="canonical" href="https://offlinetools.dev/json-to-yaml/">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <!-- YAML lib -->
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js" defer></script>
+
   <style>
-    :root{--bg1:#071a2c;--bg2:#0b2e4e;--fg:#eaf3ff;--sub:#b9cceb;--line:rgba(255,255,255,.12);--acc:#00c1ff;--acc2:#2ae0ff;--btnText:#052238}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
-      background:radial-gradient(1200px 500px at 80% -120%, rgba(0,193,255,.20), transparent 60%),linear-gradient(135deg,var(--bg1),var(--bg2));padding:32px 16px}
-    .ot{max-width:1100px;margin:0 auto;padding:20px;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);background:rgba(255,255,255,.03)}
-    .ot h1{margin:0 0 6px;font-size:clamp(26px,4.2vw,36px)} .ot .sub{margin:0 0 16px;color:var(--sub)}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-    label{font-weight:600;margin-bottom:6px;display:block}
-    textarea{min-height:260px;resize:vertical;font-family:ui-monospace,Menlo,Monaco,Consolas,"Courier New",monospace;font-size:14px;line-height:1.5;padding:12px;border:1px solid #214462;border-radius:10px;color:#dff2ff;background:#0a2035;width:100%}
-    textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(0,193,255,.22)}
-    .actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
-    .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid #123552;background:rgba(255,255,255,.06);color:#eaf3ff;font-weight:600}
-    .btn:hover{transform:translateY(-1px)} .ghost{border-color:#214462;color:#b9cceb}
-    .btn.pri{background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--btnText);border-color:transparent;box-shadow:0 8px 20px rgba(0,193,255,.25)}
-    .btn.pri:hover{box-shadow:0 12px 26px rgba(0,193,255,.32)}
-    .tip{color:var(--sub);margin-top:10px} .status{margin-top:8px;min-height:20px;color:#13e0ff;font-weight:700}.status.error{color:#ff7f7f}
+    /* ===== Theme (Nasdaq-like) ===== */
+    :root{
+      --bg1:#071a2c; --bg2:#0b2e4e; --fg:#eaf3ff; --sub:#b9cceb; --line:rgba(255,255,255,.12);
+      --acc:#00c1ff; --acc2:#2ae0ff; --btnText:#052238;
+    }
+
+    *{ box-sizing:border-box }
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--fg);
+      background:
+        radial-gradient(1200px 500px at 80% -120%, rgba(0,193,255,.20), transparent 60%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      padding: 24px 16px 40px;
+    }
+
+    /* ===== Topbar (brand + CTA) ===== */
+    .ot-topbar{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:12px; margin:0 auto 14px; padding:10px 12px;
+      max-width:1100px; width:100%;
+      border:1px solid var(--line); border-radius:12px;
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 6px 18px rgba(0,0,0,.20);
+    }
+    .ot-topbar .brand{
+      text-decoration:none; font-weight:800; letter-spacing:.2px;
+      color:var(--fg);
+    }
+    .ot-topbar .cta{
+      text-decoration:none; font-weight:800; letter-spacing:.2px;
+      padding:10px 14px; border-radius:10px;
+      background: linear-gradient(90deg, var(--acc), var(--acc2));
+      color: var(--btnText);
+      box-shadow:0 10px 22px rgba(0,193,255,.25);
+      transition: transform .12s ease, box-shadow .2s ease, filter .15s ease;
+    }
+    .ot-topbar .cta:hover{ transform:translateY(-1px); box-shadow:0 14px 28px rgba(0,193,255,.32); filter:brightness(1.03) }
+
+    /* ===== Tool card ===== */
+    .ot{
+      max-width:1100px; margin:0 auto; padding:20px;
+      border:1px solid var(--line); border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+      background: rgba(255,255,255,.03);
+    }
+    .ot h1{ margin:0 0 6px; font-size:clamp(26px, 4.2vw, 36px) }
+    .ot .sub{ margin:0 0 16px; color:var(--sub) }
+
+    .grid{ display:grid; grid-template-columns:1fr; gap:16px }
+    @media (min-width: 900px){ .grid{ grid-template-columns:1fr 1fr } }
+
+    label{ font-weight:600; margin-bottom:6px; display:block }
+    textarea{
+      min-height:260px; resize:vertical;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:14px; line-height:1.5; padding:12px; width:100%;
+      border:1px solid #214462; border-radius:10px;
+      color:#dff2ff; background:#0a2035;
+    }
+    textarea:focus{
+      outline:none; border-color: var(--acc);
+      box-shadow:0 0 0 3px rgba(0,193,255,.22);
+    }
+
+    .actions{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0 }
+    .btn{
+      cursor:pointer; padding:10px 12px; border-radius:10px;
+      border:1px solid #123552; background: rgba(255,255,255,.06);
+      color:#eaf3ff; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{ transform:translateY(-1px) }
+    .ghost{ border-color:#214462; color:#b9cceb }
+    .btn.pri{
+      background: linear-gradient(90deg, var(--acc), var(--acc2));
+      color: var(--btnText); border-color: transparent;
+      box-shadow: 0 8px 20px rgba(0,193,255,.25);
+    }
+    .btn.pri:hover{ box-shadow: 0 12px 26px rgba(0,193,255,.32) }
+
+    .tip{ color:var(--sub); margin-top:10px }
+    .status{ margin-top:8px; min-height:20px; color:#13e0ff; font-weight:700 }
+    .status.error{ color:#ff7f7f }
+
+    /* ===== Big CTA (More tools) ===== */
+    .ot-cta-wrap{
+      max-width:1100px; margin:16px auto 0; text-align:center;
+    }
+    .ot-bigbtn{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:14px 20px; border-radius:14px;
+      background: linear-gradient(90deg, var(--acc), var(--acc2));
+      color: var(--btnText); text-decoration:none; font-weight:800; letter-spacing:.2px;
+      box-shadow: 0 12px 28px rgba(0,193,255,.25);
+      transition: transform .12s ease, box-shadow .2s ease, filter .15s ease;
+    }
+    .ot-bigbtn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(0,193,255,.32);
+      filter: brightness(1.03);
+    }
+    .ot-bigbtn:focus-visible{ outline:2px solid var(--acc2); outline-offset:3px }
+    .ot-bigbtn svg{ flex:0 0 auto }
   </style>
 </head>
+
 <body>
+  <!-- Topbar -->
+  <nav class="ot-topbar">
+    <a class="brand" href="https://offlinetools.dev/?utm_source=github&utm_medium=pages&utm_campaign=json-yaml-demo" target="_blank" rel="noopener">OfflineTools.dev</a>
+    <a class="cta" href="https://offlinetools.dev/json-to-yaml/?utm_source=github&utm_medium=pages&utm_campaign=json-yaml-demo" target="_blank" rel="noopener">Open full tool</a>
+  </nav>
+
+  <!-- Tool -->
   <section class="ot" id="json2yaml" data-tool="json2yaml" aria-label="JSON to YAML and back">
     <h1>JSON ⇄ YAML</h1>
     <p class="sub">Everything happens locally in your browser. No uploads.</p>
@@ -53,40 +153,88 @@
       </div>
     </div>
 
-    <p class="tip">Tip: paste JSON on the left; or paste YAML on the right to convert back.</p>
+    <p class="tip">Tip: paste JSON on the left to convert; or paste YAML on the right to go back to JSON.</p>
     <div class="status" aria-live="polite" role="status"></div>
   </section>
 
+  <!-- Big CTA to home -->
+  <div class="ot-cta-wrap">
+    <a class="ot-bigbtn"
+       href="https://offlinetools.dev/?utm_source=github&utm_medium=pages&utm_campaign=json-yaml-demo"
+       target="_blank" rel="noopener">
+      More tools
+      <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+        <path d="M5 12h12m0 0-5-5m5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+
+  <!-- Logic -->
   <script>
   (function(){
-    function ready(fn){document.readyState!=='loading'?fn():document.addEventListener('DOMContentLoaded',fn)}
+    function ready(fn){ document.readyState!=='loading' ? fn() : document.addEventListener('DOMContentLoaded', fn); }
+
     ready(function(){
-      var root=document.getElementById('json2yaml'); if(!root) return;
-      var elJSON=root.querySelector('#ot-json'), elYAML=root.querySelector('#ot-yaml'), status=root.querySelector('.status');
+      var root = document.getElementById('json2yaml'); if(!root) return;
 
-      function setStatus(msg,err){status.textContent=msg||'';status.classList.toggle('error',!!err)}
-      function copy(txt){ if(!txt) return setStatus('Nothing to copy',true);
-        navigator.clipboard?.writeText(txt).then(()=>setStatus('Copied')).catch(()=>setStatus('Copy failed',true)); }
+      var elJSON = root.querySelector('#ot-json');
+      var elYAML = root.querySelector('#ot-yaml');
+      var status = root.querySelector('.status');
 
-      root.addEventListener('click',function(e){
-        var btn=e.target.closest('button[data-action]'); if(!btn) return; var a=btn.getAttribute('data-action'); setStatus('');
+      function setStatus(msg, isError){
+        status.textContent = msg || '';
+        status.classList.toggle('error', !!isError);
+      }
+      function copyToClipboard(text){
+        if(!text){ setStatus('Nothing to copy', true); return; }
+        navigator.clipboard?.writeText(text)
+          .then(function(){ setStatus('Copied'); })
+          .catch(function(){ setStatus('Copy failed', true); });
+      }
+
+      root.addEventListener('click', function(e){
+        var btn = e.target.closest('button[data-action]');
+        if(!btn) return;
+        var action = btn.getAttribute('data-action');
+        setStatus('');
+
         try{
-          if(a==='json2yaml'){ if(!elJSON.value.trim()) return setStatus('Paste JSON first',true);
-            var obj=JSON.parse(elJSON.value); elYAML.value=jsyaml.dump(obj,{noRefs:true,indent:2,lineWidth:100}); setStatus('Converted JSON → YAML'); }
-          if(a==='yaml2json'){ if(!elYAML.value.trim()) return setStatus('Paste YAML first',true);
-            var obj2=jsyaml.load(elYAML.value); elJSON.value=JSON.stringify(obj2,null,2); setStatus('Converted YAML → JSON'); }
-          if(a==='pretty'){ if(!elJSON.value.trim()) return setStatus('Nothing to prettify',true);
-            elJSON.value=JSON.stringify(JSON.parse(elJSON.value),null,2); setStatus('JSON prettified'); }
-          if(a==='minify'){ if(!elJSON.value.trim()) return setStatus('Nothing to minify',true);
-            elJSON.value=JSON.stringify(JSON.parse(elJSON.value)); setStatus('JSON minified'); }
-          if(a==='copy-json') copy(elJSON.value);
-          if(a==='copy-yaml') copy(elYAML.value);
-          if(a==='clear-json'){ elJSON.value=''; setStatus('Cleared JSON'); }
-          if(a==='clear-yaml'){ elYAML.value=''; setStatus('Cleared YAML'); }
-        }catch(err){ console.error(err); setStatus('Error: '+(err.message||'check your input'),true); }
+          if(action === 'json2yaml'){
+            if(!elJSON.value.trim()) return setStatus('Paste JSON first', true);
+            var obj = JSON.parse(elJSON.value);
+            var yaml = jsyaml.dump(obj, { noRefs:true, indent:2, lineWidth:100 });
+            elYAML.value = yaml;
+            setStatus('Converted JSON → YAML');
+          }
+          if(action === 'yaml2json'){
+            if(!elYAML.value.trim()) return setStatus('Paste YAML first', true);
+            var obj2 = jsyaml.load(elYAML.value);
+            elJSON.value = JSON.stringify(obj2, null, 2);
+            setStatus('Converted YAML → JSON');
+          }
+          if(action === 'pretty'){
+            if(!elJSON.value.trim()) return setStatus('Nothing to prettify', true);
+            elJSON.value = JSON.stringify(JSON.parse(elJSON.value), null, 2);
+            setStatus('JSON prettified');
+          }
+          if(action === 'minify'){
+            if(!elJSON.value.trim()) return setStatus('Nothing to minify', true);
+            elJSON.value = JSON.stringify(JSON.parse(elJSON.value));
+            setStatus('JSON minified');
+          }
+          if(action === 'copy-json'){ copyToClipboard(elJSON.value); }
+          if(action === 'copy-yaml'){ copyToClipboard(elYAML.value); }
+          if(action === 'clear-json'){ elJSON.value=''; setStatus('Cleared JSON'); }
+          if(action === 'clear-yaml'){ elYAML.value=''; setStatus('Cleared YAML'); }
+        }catch(err){
+          console.error(err);
+          setStatus('Error: ' + (err.message || 'check your input'), true);
+        }
       });
     });
   })();
   </script>
 </body>
 </html>
+
